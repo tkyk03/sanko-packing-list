@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="山行チェック">
+  <title>山行持ち物チェック</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>山行持ち物チェック</h1>
+    <button id="editToggle" class="header-btn" type="button" aria-pressed="false">編集</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="segmented" role="radiogroup" aria-label="山行タイプ">
+        <button type="button" role="radio" data-type="day">日帰り</button>
+        <button type="button" role="radio" data-type="hut">小屋泊（1泊2日）</button>
+      </div>
+      <div id="hutOptions" class="hut-options">
+        <label class="switch-row">
+          <span>食事付き</span>
+          <input id="optMeals" class="switch" type="checkbox">
+        </label>
+        <label class="switch-row">
+          <span>寝具付き</span>
+          <input id="optBedding" class="switch" type="checkbox">
+        </label>
+      </div>
+    </section>
+
+    <section class="progress-wrap view-only">
+      <div class="progress-head">
+        <span id="progressText"></span>
+        <label class="inline-check"><input id="hideChecked" type="checkbox"> チェック済みを隠す</label>
+      </div>
+      <div class="progress"><div id="progressBar"></div></div>
+      <p id="doneMsg" class="done-msg" hidden>準備完了！いってらっしゃい</p>
+    </section>
+
+    <p class="edit-hint edit-only">タップして編集・削除できます。薄く表示されているのは、今の条件では持っていかないアイテムです。</p>
+
+    <div id="list"></div>
+
+    <div class="actions">
+      <button id="resetBtn" class="secondary view-only" type="button">チェックをリセット（次の山行へ）</button>
+      <button id="restoreBtn" class="secondary danger edit-only" type="button">初期リストに戻す</button>
+    </div>
+  </main>
+
+  <button id="addBtn" class="fab" type="button">＋ 追加</button>
+
+  <dialog id="itemDialog">
+    <form id="itemForm" method="dialog">
+      <h2 id="dialogTitle">アイテムを追加</h2>
+      <label>名前
+        <input name="itemName" required maxlength="60" autocomplete="off">
+      </label>
+      <label>カテゴリ
+        <select name="category"></select>
+      </label>
+      <label id="newCategoryField">新しいカテゴリ名
+        <input name="newCategory" maxlength="30" autocomplete="off">
+      </label>
+      <label>持っていく条件
+        <select name="when"></select>
+      </label>
+      <label class="inline-check"><input name="once" type="checkbox"> 今回のみ（リセット時に削除）</label>
+      <div class="dialog-actions">
+        <button id="deleteBtn" class="secondary danger" type="button">削除</button>
+        <span class="spacer"></span>
+        <button class="secondary" value="cancel" formnovalidate>キャンセル</button>
+        <button class="primary" value="save">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
