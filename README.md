@@ -11,9 +11,26 @@
 - 「編集」からアイテム名・カテゴリ・持っていく条件の変更や削除ができる
 - 山行が終わったら「チェックをリセット」で次の山行の準備へ
 
+- 「ログイン」（Google またはメールアドレス）すると、複数の端末でリストとチェック状態が同期される
+
 ## 構成
 
-ビルド不要の静的サイト（`index.html` / `app.js` / `styles.css`）。データはブラウザ（localStorage）に保存される。
+ビルド不要の静的サイト（`index.html` / `app.js` / `styles.css`）を GitHub Pages で公開している。
+
+- データは常にブラウザ（localStorage）に保存され、ログイン中は Firebase（Firestore の `users/{uid}`）にも保存・同期される
+- Firebase の設定値は `firebase-config.js`。SDK は `sync.js` で gstatic CDN から読み込む
+- Firestore のセキュリティルールは本人のドキュメントのみ読み書き可:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+```
 
 ローカルで動かす場合:
 

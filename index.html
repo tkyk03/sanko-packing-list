@@ -15,7 +15,10 @@
 <body>
   <header class="app-header">
     <h1>山行持ち物チェック</h1>
-    <button id="editToggle" class="header-btn" type="button" aria-pressed="false">編集</button>
+    <div class="header-actions">
+      <button id="syncBtn" class="header-btn" type="button">ログイン</button>
+      <button id="editToggle" class="header-btn" type="button" aria-pressed="false">編集</button>
+    </div>
   </header>
 
   <main>
@@ -80,6 +83,43 @@
         <button class="primary" value="save">保存</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="accountDialog">
+    <div class="dialog-body">
+      <section id="signedOut">
+        <h2>ログインして同期</h2>
+        <p class="note">ログインすると、スマホやPCなど複数の端末で同じリストを使えます。</p>
+        <p class="note">最初にログインした端末のリストがクラウドに保存され、2台目以降の端末はそのリストに置き換わります。</p>
+        <button id="googleLoginBtn" class="primary wide" type="button">Googleでログイン</button>
+        <details>
+          <summary>メールアドレスでログイン</summary>
+          <form id="emailForm">
+            <label>メールアドレス
+              <input name="email" type="email" required autocomplete="email">
+            </label>
+            <label>パスワード（6文字以上）
+              <input name="password" type="password" required minlength="6" autocomplete="current-password">
+            </label>
+            <div class="dialog-actions">
+              <button class="secondary" value="signup">新規登録</button>
+              <span class="spacer"></span>
+              <button class="primary" value="login">ログイン</button>
+            </div>
+          </form>
+        </details>
+      </section>
+      <section id="signedIn" hidden>
+        <h2>同期ON</h2>
+        <p class="note"><span id="userLabel"></span> でログイン中です。変更は自動でほかの端末にも反映されます。</p>
+        <button id="logoutBtn" class="secondary wide" type="button">ログアウト</button>
+      </section>
+      <p id="authMsg" class="auth-msg" role="alert"></p>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button id="accountCloseBtn" class="secondary" type="button">閉じる</button>
+      </div>
+    </div>
   </dialog>
 
   <script type="module" src="app.js"></script>

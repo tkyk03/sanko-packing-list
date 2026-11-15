@@ -1,3 +1,7 @@
+import {
+  initSync, isSyncReady, pushState, signInWithGoogle, signInWithEmail, signUpWithEmail, signOutUser, errorMessage,
+} from './sync.js';
+
 const STORAGE_KEY = 'sanko-packing-list:v1';
 const PREFS_KEY = 'sanko-packing-list:prefs';
 const NEW_CATEGORY = '__new__';
@@ -51,8 +55,7 @@ function writeJSON(key, value) {
   }
 }
 
-function loadState() {
-  const s = readJSON(STORAGE_KEY);
+function normalizeState(s) {
   if (!s || !Array.isArray(s.items)) {
     return { items: defaultItems(), trip: { type: 'day', meals: true, bedding: true }, checked: {} };
   }
@@ -75,12 +78,20 @@ function loadState() {
   };
 }
 
-let state = loadState();
+let state = normalizeState(readJSON(STORAGE_KEY));
 const prefs = { hideChecked: false, ...readJSON(PREFS_KEY) };
 let editMode = false;
 let editingId = null;
+let user = null;
 
 function commit() {
+  writeJSON(STORAGE_KEY, state);
+  render();
+  pushState(state);
+}
+
+function applyRemoteState(remote) {
+  state = normalizeState(remote);
   writeJSON(STORAGE_KEY, state);
   render();
 }
@@ -142,6 +153,11 @@ function render() {
   $('optMeals').checked = trip.meals;
   $('optBedding').checked = trip.bedding;
   $('hideChecked').checked = prefs.hideChecked;
+  $('syncBtn').textContent = user ? '同期ON' : 'ログイン';
+  $('syncBtn').classList.toggle('on', !!user);
+  $('signedOut').hidden = !!user;
+  $('signedIn').hidden = !user;
+  $('userLabel').textContent = user ? (user.email || user.displayName || 'アカウント') : '';
   $('editToggle').textContent = editMode ? '完了' : '編集';
   $('editToggle').setAttribute('aria-pressed', String(editMode));
   document.body.classList.toggle('editing', editMode);
@@ -251,7 +267,61 @@ function setup() {
     commit();
   });
 
+  setupAccount();
   render();
+}
+
+function setAuthMessage(text) {
+  $('authMsg').textContent = text;
+}
+
+async function runAuth(action) {
+  if (!isSyncReady()) {
+    setAuthMessage('同期機能を読み込めませんでした。通信できる場所で開き直してください。');
+    return;
+  }
+  setAuthMessage('');
+  const buttons = $('accountDialog').querySelectorAll('button');
+  buttons.forEach((b) => { b.disabled = true; });
+  try {
+    await action();
+    if (user) $('accountDialog').close();
+  } catch (e) {
+    setAuthMessage(errorMessage(e));
+  } finally {
+    buttons.forEach((b) => { b.disabled = false; });
+  }
+}
+
+function setupAccount() {
+  $('syncBtn').addEventListener('click', () => {
+    setAuthMessage('');
+    $('accountDialog').showModal();
+  });
+  $('accountCloseBtn').addEventListener('click', () => $('accountDialog').close());
+  $('googleLoginBtn').addEventListener('click', () => runAuth(signInWithGoogle));
+  $('logoutBtn').addEventListener('click', () => runAuth(signOutUser));
+  $('emailForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.target.elements;
+    const email = f.email.value.trim();
+    const password = f.password.value;
+    const signUp = e.submitter?.value === 'signup';
+    runAuth(() => (signUp ? signUpWithEmail : signInWithEmail)(email, password));
+  });
+
+  initSync({
+    getLocalState: () => state,
+    onRemoteState: applyRemoteState,
+    onUserChange: (u) => {
+      user = u;
+      render();
+    },
+    onError: (message) => {
+      setAuthMessage(message);
+      $('syncBtn').textContent = '同期エラー';
+    },
+  });
 }
 
 setup();

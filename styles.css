@@ -72,7 +72,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: var(--accent);
   color: var(--on-accent);
 }
-.app-header h1 { margin: 0; font-size: 1.1rem; }
+.app-header h1 { margin: 0; min-width: 0; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .header-btn {
   border: 1px solid rgb(255 255 255 / 0.5);
   background: transparent;
@@ -82,6 +82,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-weight: 600;
 }
 .header-btn[aria-pressed="true"] { background: var(--on-accent); color: var(--accent); }
+.header-actions { display: flex; flex-shrink: 0; gap: 8px; }
+.app-header { gap: 12px; }
+.header-btn.on::before { content: "● "; color: #9be7b8; }
 
 main {
   max-width: 640px;
@@ -290,6 +293,16 @@ dialog select {
 }
 .dialog-actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
 .dialog-actions .spacer { flex: 1; }
+
+.dialog-body { display: flex; flex-direction: column; gap: 14px; padding: 20px; }
+.dialog-body section { display: flex; flex-direction: column; gap: 12px; }
+.dialog-body details form { padding: 0; margin-top: 10px; }
+.dialog-body summary { cursor: pointer; padding: 6px 0; font-weight: 700; color: var(--accent); }
+.note { margin: 0; font-size: 0.85rem; color: var(--muted); }
+.wide { width: 100%; }
+.auth-msg { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--danger); }
+.auth-msg:empty { display: none; }
+button:disabled { opacity: 0.6; cursor: default; }
 
 body:not(.editing) .edit-only { display: none; }
 body.editing .view-only { display: none; }
