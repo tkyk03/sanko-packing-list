@@ -137,13 +137,51 @@ function checkRow(item) {
     el('label', {}, input, el('span', { className: 'name', textContent: item.name }), ...badges(item)));
 }
 
-function editRow(item, isActive) {
+function moveButton(label, symbol, disabled, onClick) {
+  const b = el('button', { type: 'button', className: 'move-btn', textContent: symbol, disabled });
+  b.setAttribute('aria-label', label);
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+function editRow(item, isActive, isFirst, isLast) {
   const btn = el('button', { type: 'button', className: 'edit-row' },
     el('span', { className: 'name', textContent: item.name }),
     ...badges(item),
     el('span', { className: 'chevron', textContent: '›' }));
   btn.addEventListener('click', () => openDialog(item));
-  return el('li', { className: isActive ? 'item' : 'item inactive' }, btn);
+  return el('li', { className: isActive ? 'item editable' : 'item editable inactive' }, btn,
+    moveButton(`${item.name}を上へ`, '▲', isFirst, () => moveItem(item.id, -1)),
+    moveButton(`${item.name}を下へ`, '▼', isLast, () => moveItem(item.id, 1)));
+}
+
+function moveItem(id, dir) {
+  const { items } = state;
+  const from = items.findIndex((i) => i.id === id);
+  const { category } = items[from];
+  let to = from + dir;
+  while (to >= 0 && to < items.length && items[to].category !== category) to += dir;
+  if (to < 0 || to >= items.length) return;
+  [items[from], items[to]] = [items[to], items[from]];
+  commit();
+}
+
+function moveCategory(category, dir) {
+  const cats = categories();
+  const from = cats.indexOf(category);
+  const to = from + dir;
+  if (to < 0 || to >= cats.length) return;
+  [cats[from], cats[to]] = [cats[to], cats[from]];
+  state.items = cats.flatMap((c) => state.items.filter((i) => i.category === c));
+  commit();
+}
+
+// Category order is derived from item order, so new/recategorised items go after the category's last item.
+function insertAtCategoryEnd(item) {
+  let last = -1;
+  state.items.forEach((i, idx) => { if (i.category === item.category) last = idx; });
+  if (last === -1) state.items.push(item);
+  else state.items.splice(last + 1, 0, item);
 }
 
 function render() {
@@ -171,17 +209,23 @@ function render() {
   const shown = editMode ? state.items : active.filter((i) => !(prefs.hideChecked && state.checked[i.id]));
   const list = $('list');
   list.replaceChildren();
-  for (const cat of categories()) {
+  const cats = categories();
+  cats.forEach((cat, catIndex) => {
     const items = shown.filter((i) => i.category === cat);
-    if (!items.length) continue;
+    if (!items.length) return;
     const catActive = active.filter((i) => i.category === cat);
     const catDone = catActive.filter((i) => state.checked[i.id]).length;
-    const heading = el('h2', {}, el('span', { textContent: cat }),
-      editMode ? null : el('span', { className: 'count', textContent: `${catDone}/${catActive.length}` }));
+    const heading = el('h2', {}, el('span', { textContent: cat }), editMode
+      ? el('span', { className: 'cat-move' },
+        moveButton(`${cat}を上へ`, '▲', catIndex === 0, () => moveCategory(cat, -1)),
+        moveButton(`${cat}を下へ`, '▼', catIndex === cats.length - 1, () => moveCategory(cat, 1)))
+      : el('span', { className: 'count', textContent: `${catDone}/${catActive.length}` }));
     const ul = el('ul');
-    for (const item of items) ul.append(editMode ? editRow(item, active.includes(item)) : checkRow(item));
+    items.forEach((item, i) => {
+      ul.append(editMode ? editRow(item, active.includes(item), i === 0, i === items.length - 1) : checkRow(item));
+    });
     list.append(el('section', { className: 'category' }, heading, ul));
-  }
+  });
 }
 
 function syncNewCategoryField() {
@@ -239,8 +283,14 @@ function setup() {
     }
     const data = { name, category, when: f.when.value, once: f.once.checked };
     const existing = state.items.find((i) => i.id === editingId);
-    if (existing) Object.assign(existing, data);
-    else state.items.push({ id: newId(), ...data });
+    if (existing && existing.category === category) {
+      Object.assign(existing, data);
+    } else if (existing) {
+      state.items = state.items.filter((i) => i !== existing);
+      insertAtCategoryEnd(Object.assign(existing, data));
+    } else {
+      insertAtCategoryEnd({ id: newId(), ...data });
+    }
     commit();
   });
 
